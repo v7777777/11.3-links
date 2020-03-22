@@ -2,79 +2,28 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.RecursiveAction;
 
 
 public class Task extends RecursiveAction {
 
-    private Page page;
+    private String link;
 
-    public Task(Page page)  {
-        this.page = page;
+    public Task(String link)  {
+        this.link = link;
+        RootPage.getRootPage(link);  }
 
-    }
+    private static ConcurrentHashMap<String, Integer> forVisitedLinks = new ConcurrentHashMap<>();
+    public static Set<String> visitedLinks = forVisitedLinks.newKeySet();
 
     @Override
     protected void compute() {
 
-        String link = page.getLink();
-
-        try {
-            getLinksOnThisPage(link);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
         List<Task> taskList = new ArrayList<>();
-
-        for(Page page: page.getChildren()) {
-
-            Task task = new Task(page);
-
-            task.fork();
-            taskList.add(task);
-
-        }
-
-        for (Task task: taskList ) { task.join(); }
-
-
-    }
-
-
-
-
-    public void getLinksOnThisPage(String startPage) throws IOException {
-
-        if (Page.getAllLinks().contains(startPage)) {return;}
-
-        if (startPage.contains(".pdf"))
-        {Page.getAllLinks().add(startPage);
-
-//        synchronized (Page.file) {   // Page.file   Page.class
-//
-//                Page.writer.write(startPage + "\n");
-//                Page.writer.flush();
-              //  System.out.println(startPage);
-//            }
-
-            return;}
-
-        if (((Character)startPage.charAt(startPage.length() - 1)).equals('#')) {return;}
-
-        Page.getAllLinks().add(startPage);  // <-----------------------------------------
-
-//        synchronized (Page.file) {   // Page.file   Page.class
-//
-//            Page.writer.write(startPage + "\n");
-//            Page.writer.flush();
-          //  System.out.println(startPage);
-//        }
-
 
         Document doc = null;
 
@@ -84,28 +33,32 @@ public class Task extends RecursiveAction {
             e.printStackTrace();
         }
 
-        try {doc = Jsoup.connect(startPage).ignoreHttpErrors(true).timeout(0).get(); }
+        try {doc = Jsoup.connect(link).ignoreHttpErrors(true).timeout(0).get(); }
 
         catch (Exception e ) { e.printStackTrace();}
 
-
         Elements links = doc.select("a[href]");
 
-        for(Element link : links){
+        for(Element link : links) {
 
             String stringLink = link.attr("abs:href");
 
-            if (stringLink.contains(RootPage.rootLink) ) {
+            if (stringLink.contains(RootPage.rootLink) & !visitedLinks.contains(stringLink)) {
 
-                if (!Page.visitedLinks.contains(stringLink)) {
+                    if (stringLink.contains("#") || stringLink.contains(".jpg") || stringLink.contains(".png")) {continue;}
 
-                page.getChildren().add(new Page (stringLink));
-                Page.visitedLinks.add(stringLink); }
+                    if (stringLink.contains(".pdf"))
+                    {visitedLinks.add(stringLink);
+                        continue;}
 
-            }
-
+                    Task task = new Task(stringLink);
+                    task.fork();
+                    visitedLinks.add(stringLink);
+                    taskList.add(task); }
 
         }
+
+        for (Task task: taskList ) { task.join();}
 
 
 

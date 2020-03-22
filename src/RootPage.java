@@ -1,6 +1,6 @@
 public class RootPage {
 
-    public static volatile String rootLink;
+    public static volatile String rootLink;  // null если вызвать до вызова getRootPage() до создания Page
 
     private static RootPage rootPage;
 

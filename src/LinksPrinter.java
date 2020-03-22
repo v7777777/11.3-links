@@ -1,12 +1,28 @@
-import java.util.Collections;
-import java.util.TreeMap;
-import java.util.Vector;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
+import java.util.*;
 
 public class LinksPrinter {
 
     TreeMap<String, Integer> levels = new TreeMap<>();
+    ArrayList <String> links = new ArrayList<>();
 
-    public void print(Vector<String> links) {
+    public volatile File file = new File("links.txt");
+    public PrintWriter writer;
+
+    {
+        try {
+            writer = new PrintWriter(file);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    public void print(Set<String> linksSet) {
+
+        links.addAll(linksSet);
 
         Collections.sort(links);
 
@@ -14,10 +30,12 @@ public class LinksPrinter {
 
         printMap (links);
 
+        writer.flush();
+        writer.close();
 
     }
 
-    private void getLevel(Vector<String> links) {
+    private void getLevel(ArrayList<String> links) {
 
         String previous = null;
         int level = 0;
@@ -38,7 +56,6 @@ public class LinksPrinter {
             else {
 
                 for (int j = (i - 2); j >=0; j--) {
-
                     if (links.get(i).contains(links.get(j)))
                     { level = levels.get(links.get(j)) + 1;
                         levels.put(links.get(i), level);
@@ -55,14 +72,14 @@ public class LinksPrinter {
         }
     }
 
-    private void printMap (Vector<String> links) {
+    private void printMap (ArrayList<String> links) {
 
         for (int i = 0; i < links.size(); i ++) {
 
             printSpace(levels.get(links.get(i)));
             System.out.println(links.get(i));
-            Page.writer.write(links.get(i) + "\n");
-            Page.writer.flush();
+            writer.write(links.get(i) + "\n");
+            writer.flush();
 
         }
     }
@@ -72,8 +89,8 @@ public class LinksPrinter {
         for (int s = 1; s <= level; s++) {
 
             System.out.print("\t");
-            Page.writer.write("\t");
-            Page.writer.flush();
+            writer.write("\t");
+            writer.flush();
         }
 
 
